@@ -217,7 +217,7 @@ fit_Maes <-function(records, splityr, min_sp=5){
     
     # corrected version
     pval <- mapply(FUN=pbinom, q=rc3[,2], prob=rd[,1], MoreArgs=list(size=sum(rc3[,2])))
-    
+
     #these are one-tailed: convert them to one-tailed
     pval <- one_to_two_tail(pval)
   
