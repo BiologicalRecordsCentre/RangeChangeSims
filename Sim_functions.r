@@ -162,6 +162,7 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
     return(result) # keep this a two step process in case we later decide to extract other info
 }
 
+
 fit_Maes <-function(records, splityr, min_sp=5){
     # fits the method described in Maes et al 2012 (Biol Cons 145: 258-266)
     # I checked this by comparing the results against those in Maes et al SI
@@ -177,12 +178,10 @@ fit_Maes <-function(records, splityr, min_sp=5){
     
     # what is the observed species richness in each cell in each year
     rc1 <- apply(rc, c(2,3), sum)
-    
-    # the number of sites in each time period
-    nS <- colSums(rc1>0)
-    
+     
     # which sites have are well-sampled? (defined as having at least min_sp species in BOTH time periods)
     well_sampled <- as.numeric(dimnames(rc1)[[1]][apply(rc1, 1, function(x) all(x>=min_sp))])
+    #well_sampled <- as.numeric(names(which(apply(rc1 >= min_sp, 1, all)))) # alternate formulation
     
     # look at just the data for these well-sampled cells
     rc2 <- rc[,dimnames(rc)[[2]] %in% well_sampled,]
@@ -191,10 +190,18 @@ fit_Maes <-function(records, splityr, min_sp=5){
     rc3 <- apply(rc2, c(1,3), sum)
     
     # calculate the relative distribution in each time period
-    rd1 <- rc3[,1]/nS[1]
-    rd2 <- rc3[,2]/nS[2]
+    #nS <- colSums(rc1>0)# the number of sites in each time period
+    #rd1 <- rc3[,1]/nS[1]
+    #rd2 <- rc3[,2]/nS[2]
+    # trend <- 100 * (rd2-rd1)/rd1
     
-    trend <- 100 * (rd2-rd1)/rd1
+    # 12.9.13: THIS CODE ABOVE IS WRONG! 
+    # RE-reading Maes, I see that the denominator is *not* the total number of cells in each period
+    # rather, it's the total number of unqiue site-species combos within the well-sampled set (for each period)
+    # this is what Maes calles the 'grid cell sum'
+    # CORRECTED VERSION HERE:
+    rd <- apply(rc3, 2, function(x) x/sum(x))
+    trend <- 100 * (rd[,2]-rd[,1])/rd[,1]    
     
     # we can assess the significance of this method as follows
     # first we assume the distribution of each species is equal among poorly-sampled and well-sampled sites
@@ -202,20 +209,24 @@ fit_Maes <-function(records, splityr, min_sp=5){
     # we can calculate the binomial probability of the 'estimated number of successes
     # estimated number of successes is defined here as nsr2 (number of sites recorded in t2)
     # where the number of trials = nS[2]
+    # 12.9.13 I've changed this
     
-    nsr2 <- nS[2] * rc3[,2] / length(well_sampled)
-    true_probs <- rc3[,1]/length(well_sampled)
+    #nsr2 <- nS[1] * rc3[,2] / length(well_sampled)
+    #true_probs <- rc3[,1]/length(well_sampled)
+    #pval <- mapply(FUN=pbinom, q=rc3[,2], prob=true_probs, MoreArgs=list(size=nS[1]))
     
-    pval <- mapply(FUN=pbinom, q=nsr2, prob=true_probs, MoreArgs=list(size=nS[2]))
+    # corrected version
+    pval <- mapply(FUN=pbinom, q=rc3[,2], prob=rd[,1], MoreArgs=list(size=sum(rc3[,2])))
     
     #these are one-tailed: convert them to one-tailed
     pval <- one_to_two_tail(pval)
     
     Maes <- data.frame(N1=rc3[,1], N2=rc3[,2], trend=trend, pval=pval) 
-    attr(Maes, 'nSites') <- nS
+    attr(Maes, 'GridCellSums') <- colSums(rc3)
     attr(Maes, 'wellsampled') <- length(well_sampled)
     return(Maes)
 }
+
 
 #takes a dataframe of observations, with a vector indexing the time period
 fit_Telfer <- function(gridcell_counts, min_sq=5) {
@@ -246,6 +257,7 @@ is.gridcell.wellsampled2 <- function(data, n=3){
     sites_to_include <- num_yrs_visits >= n  
     return(data$Site %in% dimnames(x)[[1]][sites_to_include])
 }
+
 ################################################# SIM-SPECIFIC FUNCTIONS
 
 bias_focal <- function(records, disadvantage=0.5){
@@ -590,27 +602,33 @@ get_error_rates <- function(output, datecode=NULL, save_to_txt=T, sf=4, true_cha
 
     #which columns contain the p-values
 	p_val_cols <- grep('_p$',dimnames(output)[[1]]) #changed 16 Oct so only matches to end of string
-
-	# if testing power, we need to know which columns match the p-value columns
-	trend_names <- gsub('p$','trend',dimnames(output)[[1]][p_val_cols])
-	trend_cols <- sapply(trend_names, grep, dimnames(output)[[1]])
-
+    
 	if(true_change==0) { 
 		error_rates <- sapply(p_val_cols, function(i) apply(output[i,,], 1, error_rate)) #test validity
-		plr = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'plr',,])),1,error_rate)
-		Telfer = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'Telfer',,])),1,error_rate)
+		#plr = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'plr',,])),1,error_rate)
+		#Telfer = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'Telfer',,])),1,error_rate)
 	} else { 
-		error_rates <- sapply(1:length(p_val_cols), function(i) 
-        apply(output[c(trend_cols[i], p_val_cols[i]),,], 2, test_power, positive=true_change>0)) #power (fixed error 21 Nov)
-        plr = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'plr',,])),1,error_rate) #TO FIX - doesn't account for wrong direction
-		Telfer = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'Telfer',,])),1,error_rate) #TO FIX - doesn't account for wrong direction
+	  # added 16/9/13: add the word 'trend' onto Telfer & plr residual (index)
+	  # this is the simplest way of getting around the problem of matching
+	  # it's actually only necessary for the test of power
+	  dimnames(output)[[1]] <- gsub(dimnames(output)[[1]], pattern='Telfer$', repl='Telfer_trend')
+	  dimnames(output)[[1]] <- gsub(dimnames(output)[[1]], pattern='plr$', repl='plr_trend')
+	  
+	  # if testing power, we need to know which columns match the p-value columns
+	  trend_names <- gsub('p$','trend',dimnames(output)[[1]][p_val_cols])
+	  trend_cols <- sapply(trend_names, grep, dimnames(output)[[1]])
+	      
+    error_rates <- sapply(1:length(p_val_cols), function(i) 
+    apply(output[c(trend_cols[i], p_val_cols[i]),,], 2, test_power, positive=true_change>0)) #power (fixed error 21 Nov)
+    #plr = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'plr',,])),1,error_rate) #TO FIX - doesn't account for wrong direction
+		#Telfer = apply(one_to_two_tail(pnorm(output[dimnames(output)[[1]] == 'Telfer',,])),1,error_rate) #TO FIX - doesn't account for wrong direction
 	}
 	
 	varnames <- dimnames(output)[[1]][p_val_cols]
 	dimnames(error_rates)[[2]] <- substr(varnames, 1, regexpr('_',varnames) - 1)
 
 	# now append the p-values from the standardised residuals
-	error_rates <- cbind(prop.diff = NA, plr = plr, Telfer = Telfer,	error_rates)
+	#error_rates <- cbind(prop.diff = NA, plr = plr, Telfer = Telfer,	error_rates)
     
     # for some combos (especially mixed model under scenario C) there are some reps which don't return enough data
     error_rates <- round(error_rates,sf)
@@ -986,6 +1004,7 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	# 6 November: added a 'stupid' model based on simply the number of visits & sites
 	# 4 December: added 'pRecsBenchmark': the proportion of records made up by commonest 27%
     #takes a simulated dataset and runs each method
+  # 13 September: Added mixed effects version of List Length model
 	
 	######## two timeperiod models (0.01 seconds)
 	splityr <- mean(range(records$Year))
@@ -995,16 +1014,21 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	plr <- rstandard(lm(log(n2) ~ log(n1), gridcell_counts, subset=n1 >= min_sq & n2 >0))
 	Telfer <- fit_Telfer(gridcell_counts, min_sq)
 	
-    #we actually only want information from the focal species
+  #we actually only want information from the focal species
 	output <- cbind(prop.diff, plr, Telfer)[1,]
-    
+  
+  # Add Telfer p here for simplicity (no estimate of directionality)
+	output <- c(output, 
+              plr_p = as.numeric(one_to_two_tail(pnorm(plr[1]))),
+              Telfer_p = as.numeric(one_to_two_tail(pnorm(Telfer[1]))))
+	
 	# now fit the method of Maes et al 2012
-    Maes <- fit_Maes(records, splityr, min_sq)[1,]
-    output <- c(output, Maes_trend=Maes$trend, Maes_p=Maes$pval)
+  Maes <- fit_Maes(records, splityr, min_sq)[1,] # just the first row (i.e. the focal species)
+  output <- c(output, Maes_trend=Maes$trend, Maes_p=Maes$pval)
     
 	attr(output, 'nSitesFocal') <- gridcell_counts[1,1:2]
 	
-    ######## DATA FRAME FOR visit-based analysis
+  ######## DATA FRAME FOR visit-based analysis
 	simdata <- cast_recs(records, resolution='visit') # 0.02 seconds
     
 	######## WHICH SITES HAS THE FOCAL SPECIES EVER BEEN RECORDED ON? (added 1/5/13)
@@ -1019,7 +1043,7 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	# end bug check
 	output <- c(output, LL_trend=LL_model[2,1], LL_p=LL_model[2,4])
     
-    ## a second version of the List Length in which only sites where the focal has been EVER recorded
+  ## a second version of the List Length in which only sites where the focal has been EVER recorded
 	# added 1/5/13
     x <- try(
 	    LL_model2 <- summary(glm(focal ~ Year + log2(L), binomial, data=simdata, 
@@ -1028,7 +1052,18 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	if(class(x)=='try-error') save(records, file='LLfs_try_error.rData')
 	# end bug check
 	output <- c(output, LLfs_trend=LL_model2[2,1], LLfs_p=LL_model2[2,4])
-    
+  
+  ### 13/9/13: LL model with random effect
+  simdata$cYr <- simdata$Year - median(unique(simdata$Year))
+  x <- try(
+	  LL_mm <- summary(glmer(focal ~ cYr + log2(L) + (1|Site), binomial, data=simdata, subset = L>0))
+	  , silent=T)
+	if(class(x)=='try-error') save(records, file='LLMM_try_error.rData')
+	# end bug check
+	coef <- as.numeric(LL_mm@coefs[2,])
+  output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
+	
+  
 	######## Ball method 
 	# modified 1/5/13 to include multiple versions of this method
     
@@ -1092,16 +1127,15 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 
     output <- c(output, VRhov_trend=Ball_model[2,1], VRhov_p=Ball_model[2,4])    
 	
-    
     ######## Mixed model: 0.16 seconds to cast the data, 0.3 to fit the model
 	
     # 21 June: add the MM without any kind of threshold
-    # this makes it the same as Visit rate but with a site effect
+    # this makes it the same as Visit Rate but with a site effect
     # we're actually including it in order to verify that Occupancy will be ok under B3f
     MM <- fit_ladybirdMM_bin(simdata, nsp=1, nyr=1)[c(1,4,5)]
-	names(MM) <- c('trend', 'p', 'pCombosUsed')
-	names(MM) <- paste('MMbin0_', names(MM), sep='')
-	output <- c(output, MM) #     
+	  names(MM) <- c('trend', 'p', 'pCombosUsed')
+	  names(MM) <- paste('MMbin0_', names(MM), sep='')
+	  output <- c(output, MM) #     
     
     #MMdata <- cast_recs(records, resolution='kmyr')
 	#i <- MMdata$L >= 2

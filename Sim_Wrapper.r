@@ -53,11 +53,6 @@
 # This version is compatible with Linux
 #
 ###################################################################################################################
-#
-# TO DO / ISSUES
-# 1. Modify statistics for testing power so that only correlations in the correct dimension are counted
-# 2. include year zero?
-#
 ###################################################################################################################
 ###################################################################################################################
 rm(list=objects())
@@ -87,13 +82,7 @@ library(reshape2, lib=libloc) # this is not necessary on Windows - the packages 
 # 
 ################################################################################################################### 
 datecode <- format(Sys.Date(),'%y%m%d')
-###################################################################################################################
-source('Sim functions 130621.r')
-#source('Sim functions 130501.r')
-#source('Sim functions 130424.r')
-#source('Sim functions 130408.r')
-#source('Sim functions 130213.r')
-#source('Sim functions 130204.r')
+source('Sim_functions.r')
 ################################################################################################################### FULL SIMS
 # Set the parameters here, to be passed further down into the workhorse functions
 nSi=1000; nY=10
@@ -117,6 +106,7 @@ nr = 500
 ################################################################################################################### EXPLORE
 #true_data <- create_data(nSites=1000, nSpecies=25)
 #records <- generate_records(nYrs=10, pSVS=pSVS, true_data) # multiple years
+records <- generate_records(nYrs=10, pSVS=pSVS, true_data=create_data()) # multiple years
 #records <- generate_all_scenarios(nSites=nSi, nSpecies=nSp, nYrs=nY, pSVS=pSVS, pFocal=pF, p_short=ps, pDetMod=di, decline=d, Scenarios=Sc)
 #output <- iterate_all_scenarios(nreps=nr, nSpecies=nSp, nSites=nSi, nYrs=nY, pSVS=pSVS, p_short=ps, pDetMod=di, 
 #                                pFocal=pF, decline=d, id=code, save_data=sv, inclMM=MM, Frescalo=Fr, Scenarios=Sc)
@@ -134,9 +124,9 @@ Fr=0
 MM=0
 nSi=1000
 #nr=20#50
-#d=0
+d=0.3
 #pSVS=0.05 # the proportion of sites receiving a single visit
-
+#nr=1
 system.time({
     for(d in c(0, 0.3)) 
     for(pSVS in c(0.05, 0.1, 0.07)) 
@@ -162,5 +152,4 @@ system.time({
     }
 })
 # end
-
 
