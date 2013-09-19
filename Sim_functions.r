@@ -220,7 +220,7 @@ fit_Maes <-function(records, splityr, min_sp=5){
     
     #these are one-tailed: convert them to one-tailed
     pval <- one_to_two_tail(pval)
-    
+  
     Maes <- data.frame(N1=rc3[,1], N2=rc3[,2], trend=trend, pval=pval) 
     attr(Maes, 'GridCellSums') <- colSums(rc3)
     attr(Maes, 'wellsampled') <- length(well_sampled)
