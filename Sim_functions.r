@@ -22,7 +22,6 @@ source('Frescalo/Process files/run_fresc_param_sims.r')
 occurrence <- function(x) length(x) > 0 # takes a vector and returns whether the length is greater than 0
 
 
-
 cast_recs <- function(records, resolution='visit', focalspname='focal'){
 	#takes a set of records and returns a dataframe suitable for analysis
 	#columns include the list length and presence/absence of the focal species
