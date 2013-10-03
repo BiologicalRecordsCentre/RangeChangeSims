@@ -25,6 +25,6 @@ if(!lme4_details['Version']>1.0){
 
 library(sparta)
 
-# Create the data
+# Run the analysis NOTE: this takes some time!
 source('Sim_Wrapper.r')
 
