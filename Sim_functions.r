@@ -13,7 +13,7 @@ require(reshape2)
 require(lme4)
 
 #Source Frescalo code (must be in a subdirectory of the wd)
-source('Frescalo/Process files/run_fresc_param_sims.r')
+#source('Frescalo/Process files/run_fresc_param_sims.r')
 #source('Frescalo/Process files/sims_to_frescalo.r') # moved further down
 
 #################################################
@@ -105,7 +105,7 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
     if(sum(i) > nyr){ # PERHAPS CHANGE THIS TO LenUniq(MMdata[i,]$Site) > 6
         x <- try({# another source of the bug error is if there's not enough to fit the model
             MM <- glmer(focal ~ I(Year-my) + (1|Site), MMdata, subset=i, family=binomial)
-            coefs <- as.numeric(summary(MM)@coefs[2,])
+            coefs <- as.numeric(summary(MM)$coefficients[2,])
             }, silent=T)
         if(class(x)=='try-error') save(list(MMdata, nsp), file='MM_ber_tryerror.rData')
         # end bug check
@@ -149,7 +149,7 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
             } else {
                 MM <- glmer(cbind(nVR, failures) ~ cYr + (1|Site), data=MMdata, family=binomial, verbose=V)
             }    
-            coefs <- as.numeric(summary(MM)@coefs[2,])
+            coefs <- as.numeric(summary(MM)$coefficients[2,])
             }, silent=T)
         if(class(x)=='try-error') save(MMdata, file='MM_bin_tryerror.rData')
         # end bug check
@@ -1060,7 +1060,7 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	  , silent=T)
 	if(class(x)=='try-error') save(records, file='LLMM_try_error.rData')
 	# end bug check
-	coef <- as.numeric(LL_mm@coefs[2,])
+	coef <- as.numeric(LL_mm$coefficients[2,])
   output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
 	
   
@@ -1171,16 +1171,10 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
     ######## Frescalo (by Tom August & Colin Harrower)
 	if (sum(Frescalo)>0){
 	 # Set directory where Frescalo is located
-	 	  # Set path to Frescalo and output folder, which is platform dependent 
-	  if (grepl("linux", R.version$platform)){
-	    #frescalo_path <- '/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Frescalo_3a_linux.exe'
-	    #output_dir <- '/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Output'	
-		frescalo_path <- '/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Frescalo_3a_linux.exe'
-	    output_dir <- '/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Output'
-	  } else { 
-	    frescalo_path <- "P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Frescalo_3.exe"
-	    output_dir <- "P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Output"
-	  }
+	 # Set path to Frescalo and output folder, which is platform dependent 
+	 frescalo_path <- sparta_dir <- paste(find.package('sparta'),'/exec/Frescalo_3.exe',sep='')
+	 output_dir <- getwd()
+	 
 	 
 	 for (i in Frescalo) {
     #i=1: 1 year per time period
@@ -1248,6 +1242,7 @@ sims_to_frescalo <- function (records,output_dir,frescalo_path,tp2=FALSE){
   }
   fres_in<-unique(fres_in) # added 17/1/13 to remove duplicate entries
   # call the frecalo function
+  print(head(fres_in))
   Tfac_StDev<-run_fresc_sims(fres_in,output_dir,frescalo_path)
     
   # return the time factor and standard deviation for the species 'focal'
