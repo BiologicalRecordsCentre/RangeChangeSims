@@ -12,12 +12,6 @@
 require(reshape2)
 require(lme4)
 
-#Source Frescalo code (must be in a subdirectory of the wd)
-#source('Frescalo/Process files/run_fresc_param_sims.r')
-#source('Frescalo/Process files/sims_to_frescalo.r') # moved further down
-
-#################################################
-#################################################
 ################################################# GENERIC FUNCTIONS - TO BE ADDED TO TO 'RANGE CHANGE FUNCS'
 occurrence <- function(x) length(x) > 0 # takes a vector and returns whether the length is greater than 0
 
@@ -107,7 +101,10 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
             MM <- glmer(focal ~ I(Year-my) + (1|Site), MMdata, subset=i, family=binomial)
             coefs <- as.numeric(summary(MM)$coefficients[2,])
             }, silent=T)
-        if(class(x)=='try-error') save(list(MMdata, nsp), file='MM_ber_tryerror.rData')
+        if(class(x)=='try-error'){
+          MM_ber_tryerror <- list(MMdata, nsp)
+          save(MM_ber_tryerror, file='MM_ber_tryerror.rData')
+        }
         # end bug check
     } else coefs <- rep(NA, 4)
     
@@ -1058,10 +1055,16 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
   x <- try(
 	  LL_mm <- summary(glmer(focal ~ cYr + log2(L) + (1|Site), binomial, data=simdata, subset = L>0))
 	  , silent=T)
-	if(class(x)=='try-error') save(records, file='LLMM_try_error.rData')
+	if(class(x)=='try-error'){
+    save(records, file='LLMM_try_error.rData')
+    coef <- rep(NA,4)
+    output <- c(output, LLmm_trend=NA, LLmm_p=NA)
+	} else {
+	  coef <- as.numeric(LL_mm$coefficients[2,])
+	  output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
+	}
 	# end bug check
-	coef <- as.numeric(LL_mm$coefficients[2,])
-  output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
+	
 	
   
 	######## Ball method 
@@ -1172,7 +1175,7 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	if (sum(Frescalo)>0){
 	 # Set directory where Frescalo is located
 	 # Set path to Frescalo and output folder, which is platform dependent 
-	 frescalo_path <- sparta_dir <- paste(find.package('sparta'),'/exec/Frescalo_3.exe',sep='')
+	 frescalo_path <- paste(find.package('sparta'),'/exec/Frescalo_3a.exe',sep='')
 	 output_dir <- getwd()
 	 
 	 

@@ -13,8 +13,7 @@
 #------------------------------------------------------------------------------
 
 # REQUIREMENTS
-	# Save current directory
-		org_wd = getwd()
+	
 		
 # VARIABLES
 	
@@ -43,6 +42,8 @@ run_fresc_sims = function(
 # BODY OF FUNCTION
 	# Print status to screen 
 		#cat("\nINTIAL SETUP\n",rep("*",20),"\n\n", sep="")
+	# Save current directory
+		org_wd = getwd()
 	# Check that frescalo_path exists
 		if(!file.exists(frescalo_path)){
 			stop("ERROR: supplied frescalo path is not valid")
