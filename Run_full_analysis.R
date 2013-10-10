@@ -27,10 +27,10 @@ if(!lme4_details['Version']>1.0){
 library(sparta)
 
 # Run the analysis 
-# NOTE: This is set for 10 runs (which takes about 30 minutes on a regular desktop)
+# NOTE: This is set for 50 run (which takes about 20 hours on a regular desktop)
 # The original analysis uses XXXX runs
 source('Sim_Wrapper.r')
-Sim_Wrapper(number_of_runs=1)
+Sim_Wrapper(number_of_runs=50)
 
 # Plot figures
 source('Explore_results.R')
