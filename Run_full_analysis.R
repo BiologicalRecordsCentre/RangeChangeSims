@@ -5,6 +5,7 @@
 # WARNING: This script will install libraries needed for the analysis.
 # This includes updateing lme4 if the version you have is <1.0. If you
 # do not want to have these packages installed do not run this script.
+rm(list=ls())
 
 # install required packages if not installed
 req_pkgs <- c('lme4','reshape2','abind','sp','gdata','lattice','Matrix','ggplot2')
@@ -29,7 +30,7 @@ library(sparta)
 # NOTE: This is set for 10 runs (which takes about 30 minutes on a regular desktop)
 # The original analysis uses XXXX runs
 source('Sim_Wrapper.r')
-Sim_Wrapper(number_of_runs = 10)
+Sim_Wrapper(number_of_runs=1)
 
 # Plot figures
 source('Explore_results.R')

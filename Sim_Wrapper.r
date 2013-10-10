@@ -2,7 +2,7 @@
 # with Arco van Strien
 # Initial code written 11-16 July 2012
 # Simulations to compare the performance of range change methods
-Sim_Wrapper <- function(number_of_runs){
+Sim_Wrapper <- function(number_of_runs=NULL){
 
 app_tmin  <- (number_of_runs * 180)/60
 app_hours <- app_tmin%/%60
@@ -13,8 +13,6 @@ cat(paste('Undertaking', number_of_runs, 'runs will take about',
           sep=' '))
 if(app_tmin>30) cat("It's probably a good time to go grab a coffee")
   
-rm(list=ls())
-
 library(lme4) 
 library(reshape2)
 library(abind)
