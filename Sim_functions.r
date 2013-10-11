@@ -91,7 +91,7 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
 
     #subset the data
     i <- MMdata$L >= nsp
-	i[i==T] <- is.gridcell.wellsampled(MMdata$Site[i], n=nyr)
+	  i[i==T] <- is.gridcell.wellsampled(MMdata$Site[i], n=nyr)
 
     # 4/2/13: with small numbers of visits, it's possible that no gridcells meet the criterion
         # I also centred the data on the mid year in order to improve numerical convergence 
@@ -104,6 +104,7 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
         if(class(x)=='try-error'){
           MM_ber_tryerror <- list(MMdata, nsp)
           save(MM_ber_tryerror, file='MM_ber_tryerror.rData')
+          coefs <- rep(NA, 4)
         }
         # end bug check
     } else coefs <- rep(NA, 4)
