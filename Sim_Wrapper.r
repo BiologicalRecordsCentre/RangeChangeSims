@@ -106,11 +106,27 @@ nr = 500
 ################################################################################################################### EXPLORE
 #true_data <- create_data(nSites=1000, nSpecies=25)
 #records <- generate_records(nYrs=10, pSVS=pSVS, true_data) # multiple years
-records <- generate_records(nYrs=10, pSVS=pSVS, true_data=create_data()) # multiple years
+#records <- generate_records(nYrs=10, pSVS=pSVS, true_data=create_data()) # multiple years
 #records <- generate_all_scenarios(nSites=nSi, nSpecies=nSp, nYrs=nY, pSVS=pSVS, pFocal=pF, p_short=ps, pDetMod=di, decline=d, Scenarios=Sc)
 #output <- iterate_all_scenarios(nreps=nr, nSpecies=nSp, nSites=nSi, nYrs=nY, pSVS=pSVS, p_short=ps, pDetMod=di, 
 #                                pFocal=pF, decline=d, id=code, save_data=sv, inclMM=MM, Frescalo=Fr, Scenarios=Sc)
 ################################################################################################################### EXPLORE
+
+# temp test of Maes
+
+#M_test <- t(replicate(100,{
+#  true_data <- create_data(nSites=1000, nSpecies=25)
+#  records <- generate_records(nYrs=10, pSVS=0.1, true_data, decline=00.3)
+#  cbind(fit_Maes(records, test=1)[1,4],
+#        fit_Maes(records, test=4)[1,4],
+#        fit_Maes(records, test=5)[1,4])
+#}, simplify=T))
+
+#apply(M_test, 2, function(x) mean(x <= 0.05))
+#plot(M_test[,2],M_test[,4]); abline(0,1)
+
+#Type I errors: test1=0.01; test4=0.00; test5=0.00
+#Power: test1=0.37; test4=0.09; test5=0.22
 
 ################
 # MARNIX - just change this next line to TRuE
@@ -120,13 +136,13 @@ ExtractOnly = F
 ### temp
 
 #Sc='D' # one other scenario - the output querying doesn't work with only A
-Fr=0
+Fr=0#1
 MM=0
 nSi=1000
 #nr=20#50
-d=0.3
+#d=0.3
 #pSVS=0.05 # the proportion of sites receiving a single visit
-#nr=1
+#nr=10
 system.time({
     for(d in c(0, 0.3)) 
     for(pSVS in c(0.05, 0.1, 0.07)) 
