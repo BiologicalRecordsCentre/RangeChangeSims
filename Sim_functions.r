@@ -22,7 +22,6 @@ source('Frescalo/Process files/run_fresc_param_sims.r')
 occurrence <- function(x) length(x) > 0 # takes a vector and returns whether the length is greater than 0
 
 
-
 cast_recs <- function(records, resolution='visit', focalspname='focal'){
 	#takes a set of records and returns a dataframe suitable for analysis
 	#columns include the list length and presence/absence of the focal species
@@ -164,11 +163,181 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
 }
 
 
-fit_Maes <-function(records, splityr, min_sp=5){
+
+fit_Maes <-function(records, splityr=NULL, min_sp=5, var=T, test=4){
+  # fits the method described in Maes et al 2012 (Biol Cons 145: 258-266)
+  # I checked this by comparing the results against those in Maes et al SI
+  # the function returns numbers of sites in 2 time periods (out of the well-sampled ones), the %trend and p-value
+  # 29/11/13: updated p-value as per Thierry Onkelinx's helper functions 
+  #           (I tried adding the var=T option but it doesn't really help deliver 'sensible' T1 errors)
+  # 2/12/13: there have been several attempts to figure out the test statistic here
+  #         I've modified the code to allow a choice.
+  
+  require(reshape2)
+  
+  if(is.null(splityr)) splityr <- median(unique(records$Year))
+  
+  # which time period is each record in?
+  records$tp <- 1+ (records$Year > splityr)
+  
+  # convert the records into a 3D array
+  rc <- acast(records, Species ~ Site ~ tp, fun=occurrence, value.var=2)
+  
+  # what is the observed species richness in each cell in each year
+  rc1 <- apply(rc, c(2,3), sum)
+  
+  # which sites have are well-sampled? (defined as having at least min_sp species in BOTH time periods)
+  well_sampled <- as.numeric(dimnames(rc1)[[1]][apply(rc1, 1, function(x) all(x>=min_sp))])
+  #well_sampled <- as.numeric(names(which(apply(rc1 >= min_sp, 1, all)))) # alternate formulation
+  
+  # look at just the data for these well-sampled cells
+  rc2 <- rc[,dimnames(rc)[[2]] %in% well_sampled,]
+  
+  # how many sites for each species in each time period?
+  rc3 <- apply(rc2, c(1,3), sum)
+  
+  # calculate the relative distribution in each time period
+  rd <- apply(rc3, 2, function(x) x/sum(x))
+  
+  n <- colSums(rc3)
+  
+  ##########################################################
+  # 3 helper functions by Thierry Onkelinx
+  sampleRd <- function(rd, n, rd.names = factor(seq_len(nrow(rd)))){
+    #Generate a new set of relative distributions based on a given set of relative distributions
+    #@author Thierry Onkelinx
+    #@export
+    #@param rd a matrix with relative distributions. The first column contains the relative distribution at the first timepoint. The column column those of the second timepoint. Other columns are ignored.
+    #@param n a vector with the number of sampled gridcells in each period. Only the first two are used.
+    #@param rd.names an optinal vector with the species names
+    #@return a matrix with five columns and as much rows as in rd. 
+    # The columns contain: 
+    # 1) the resampled relative distribution at timepoint 1
+    # 2) the resampled relative distribution at timepoint 2 under the null hypothesis (rd1 == rd2)
+    # 3) the resampled relative distribution at timepoint 2 under the alternate hypothesis (rd1 != rd2)
+    # 4) the index from Maes et al assuming the null hypothesis and the 
+    # 5) observed index from Maes et al based on the new sample.
+    t1 <- sample(rd.names, size = n[1], prob = rd[, 1], replace = TRUE)
+    t2.0 <- sample(rd.names, size = n[2], prob = rd[, 1], replace = TRUE)
+    t2.a <- sample(rd.names, size = n[2], prob = rd[, 2], replace = TRUE)
+    t1 <- table(t1) / n[1]
+    t2.0 <- table(t2.0) / n[2]
+    t2.a <- table(t2.a) / n[2]
+    cbind(t1, t2.0, t2.a, 
+          d0=(t2.0 - t1) / t1, da=(t2.a - t1) / t1, 
+          dx0=(t2.0 - t1)/rd[,1], dxa=(t2.a - t1)/rd[,1]) # Added by NI to reduce the variance
+  }
+  
+  twoSidedPValue <- function(rd, n, distribution, var=T){
+    #Calculate two sided p-values for the index from Maes et al based on their bootstrapped distribution under the null hypothesis
+    # @author Thierry Onkelinx
+    # @export
+    # @param rd a matrix with relative distributions. The first column contains the relative distribution at the first timepoint. The column column those of the second timepoint. Other columns are ignored.
+    # @param n a vector with the number of sampled gridcells in each period. Only the first two are used. Ignored when distribution is given.
+    # @param distribution a list with at least one item H0 contains a matrix with as many rows as rd containing resampled values of the index under the null hypothesis. Will be calculated if missing.
+    # @return a vector with two sided p-values for each row of rd
+    
+    var <- ifelse(var, 4,6) # should we use the randomised value in the denominator or the observed?
+    
+    if(missing(distribution)){
+      if(missing(n)){
+        stop("either n or distribution must be defined")
+      } else {
+        distribution <- list(
+          H0 = replicate(1e3, {
+            x <- sampleRd(rd = rd, n = n)[, var]
+          })
+        )
+      }
+    }
+    trend <- (rd[,2]-rd[,1])/rd[,1]
+    p <- sapply(seq_len(nrow(rd)), function(i){
+      if(is.infinite(trend[i]) | is.na(trend[i])){
+        NA
+      } else if(trend[i] > 0){
+        mean(distribution$H0[i, ] >= trend[i]) * 2
+      } else {
+        mean(distribution$H0[i, ] <= trend[i]) * 2
+      }
+    })
+  return(cbind(trend, p))  
+  }
+  
+  confintRd <- function(rd, n, distribution, alpha = 0.05, var=T){
+    #'Calculate confidence intervals for the index from Maes et al based on their bootstrapped distribution under the alternative hypothesis
+    # @author Thierry Onkelinx
+    # @export
+    #@param rd a matrix with relative distributions. The first column contains the relative distribution at the first timepoint. The column column those of the second timepoint. Other columns are ignored.
+    #@param n a vector with the number of sampled gridcells in each period. Only the first two are used. Ignored when distribution is given.
+    #@param distribution a list with at least one item Ha contains a matrix with as many rows as rd containing resampled values of the index under the alternative hypothesis. Will be calculated if missing.
+    #@param alpha the errorlevel
+    #@return a matrix with observed index, lower confidence limits, upper confidence limit and median.
+    
+    var <- ifelse(var, 5,7) # should we use the randomised t1 in the denominator or the observed?
+    
+    if(missing(distribution)){
+      if(missing(n)){
+        stop("either n or distribution must be given.")
+      } else {
+        distribution <- list(
+          Ha = replicate(1e3, {
+            x <- sampleRd(rd = rd, n = n)[, var]
+          })
+        )
+      }
+    }
+    x <- t(apply(
+      distribution$Ha, 
+      1,
+      quantile,
+      c(alpha / 2, 1 - alpha / 2, 0.5)
+    ))
+    #x <- cbind(rd[, 3], x)
+    #colnames(x) <- c("observed", "lcl", "ucl", "median")
+    colnames(x) <- c("lcl", "ucl", "median")
+    x
+  } 
+
+  ########################################################## end functions by thierry Onkelinx
+  
+  if(test==1){ # my simple version: binomial probability of t2 observations given prob in T1
+    trend <- (rd[,2]-rd[,1])/rd[,1]
+    pval <- mapply(FUN=pbinom, q=rc3[,2], prob=rd[,1], MoreArgs=list(size=sum(rc3[,2])))
+    #these are one-tailed: convert them to one-tailed
+    pval <- one_to_two_tail(pval) 
+    Maes_fit <- cbind(trend, pval)
+  } else if(test==2) {
+    Maes_fit = NULL # to implement
+  } else if(test==3) { # thierry#s modification of my bootstrapping suggestion
+    Maes_fit <- twoSidedPValue(rd, n=n, var=var)
+  } else if(test==4) { # a binomial glm with gridcell sum as denominator
+    Maes_fit <- t(sapply(1:nrow(rc3), function(i) {
+      obs <- rc3[i,]
+      mod <- glm(cbind(obs,n-obs) ~ c(1:2), binomial)
+      summary(mod)$coef[2,c(1,4)]
+      }))
+  } else if(test==5) { # a binomial glm with number of sites as denominator
+    Maes_fit <- t(sapply(1:nrow(rc3), function(i) {
+      obs <- rc3[i,]
+      mod <- glm(cbind(obs,length(well_sampled)-obs) ~ c(1:2), binomial)
+      summary(mod)$coef[2,c(1,4)]
+    }))
+  } else Maes_fit = NULL
+  
+  Maes <- data.frame(N1=rc3[,1], N2=rc3[,2], trend=Maes_fit[,1], pval=Maes_fit[,2]) 
+  attr(Maes, 'GridCellSums') <- n
+  attr(Maes, 'wellsampled') <- length(well_sampled)
+  return(Maes)
+}
+
+
+fit_Maes_old <-function(records, splityr, min_sp=5){
     # fits the method described in Maes et al 2012 (Biol Cons 145: 258-266)
     # I checked this by comparing the results against those in Maes et al SI
     # I've added a sampling theory to estimate p-values. We'll see whether it's robust!
     # the function returns numbers of sites in 2 time periods (out of the well-sampled ones), the %trend and p-value
+    # 31/9/13: updated p-value as per Thierry Onkelinx's code
+  
     require(reshape2)
     
     # which time period is each record in?
@@ -202,7 +371,7 @@ fit_Maes <-function(records, splityr, min_sp=5){
     # this is what Maes calles the 'grid cell sum'
     # CORRECTED VERSION HERE:
     rd <- apply(rc3, 2, function(x) x/sum(x))
-    trend <- 100 * (rd[,2]-rd[,1])/rd[,1]    
+    #trend <- 100 * (rd[,2]-rd[,1])/rd[,1]    # 13/11/13: trend is estimated below as a proportion, not %
     
     # we can assess the significance of this method as follows
     # first we assume the distribution of each species is equal among poorly-sampled and well-sampled sites
@@ -217,12 +386,54 @@ fit_Maes <-function(records, splityr, min_sp=5){
     #pval <- mapply(FUN=pbinom, q=rc3[,2], prob=true_probs, MoreArgs=list(size=nS[1]))
     
     # corrected version
-    pval <- mapply(FUN=pbinom, q=rc3[,2], prob=rd[,1], MoreArgs=list(size=sum(rc3[,2])))
+    #pval <- mapply(FUN=pbinom, q=rc3[,2], prob=rd[,1], MoreArgs=list(size=sum(rc3[,2])))
 
     #these are one-tailed: convert them to one-tailed
-    pval <- one_to_two_tail(pval)
+    #pval <- one_to_two_tail(pval)
   
-    Maes <- data.frame(N1=rc3[,1], N2=rc3[,2], trend=trend, pval=pval) 
+    # New version, by Thierry Onkelinx
+    n <- colSums(rc3)
+    #confidence intervals under the alternative hypothesis
+    CI <- t(apply(rd, 1, function(x){
+      quantile(
+        na.omit(#ignore trends where the species is absent in both time periods
+          apply(
+            #simulate under the alternative hypothesis
+            matrix(
+              rbinom(2e3, size = n, prob = x) / n,
+              nrow = 2),
+            2,
+            #calculate simulated trend under the alternative hypothesis
+            function(y){(y[2] - y[1]) / y[1]}
+          )
+        ),
+        prob = c(0.025, 0.975)
+      )
+    }))
+    
+    #p-values under the null hypothesis
+    p.values <- t(apply(rd, 1, function(x){
+      trend <- (x[2] - x[1]) / x[1]
+      trend.null <- na.omit(apply(
+        #simulate under the null hypothesis x[1] == x[2]
+        matrix(
+          rbinom(2e3, size = n, prob = x[1]) / n,
+          nrow = 2
+        ),
+        2,
+        #calculate simulated trend under the null hypothesis
+        function(y){(y[2] - y[1]) / y[1]}
+      ))
+      c(
+        trend = unname(trend),
+        p.negative.trend.one.sided = mean(trend.null <= trend),
+        p.positive.trend.one.sided = mean(trend.null >= trend),
+        p.absolute.trend.two.sided = mean(abs(trend.null) >= abs(trend))
+      )
+    }))
+########## end of Thierry Onkelinx's code    
+    
+    Maes <- data.frame(N1=rc3[,1], N2=rc3[,2], trend=p.values[,1], pval=p.values[,4]) 
     attr(Maes, 'GridCellSums') <- colSums(rc3)
     attr(Maes, 'wellsampled') <- length(well_sampled)
     return(Maes)
@@ -1024,9 +1235,14 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
               Telfer_p = as.numeric(one_to_two_tail(pnorm(Telfer[1]))))
 	
 	# now fit the method of Maes et al 2012
-  Maes <- fit_Maes(records, splityr, min_sq)[1,] # just the first row (i.e. the focal species)
+  Maes <- fit_Maes(records, splityr, min_sq, test=4)[1,] # just the first row (i.e. the focal species)
   output <- c(output, Maes_trend=Maes$trend, Maes_p=Maes$pval)
-    
+
+	# temporary measure
+  # rerun with the other version of the test (number of cells, not gridcellsum as denom)
+  Maes <- fit_Maes(records, splityr, min_sq, test=5)[1,] # just the first row (i.e. the focal species)
+	output <- c(output, Maes5_trend=Maes$trend, Maes5_p=Maes$pval)
+	  
 	attr(output, 'nSitesFocal') <- gridcell_counts[1,1:2]
 	
   ######## DATA FRAME FOR visit-based analysis
