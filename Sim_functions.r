@@ -12,12 +12,6 @@
 require(reshape2)
 require(lme4)
 
-#Source Frescalo code (must be in a subdirectory of the wd)
-source('Frescalo/Process files/run_fresc_param_sims.r')
-#source('Frescalo/Process files/sims_to_frescalo.r') # moved further down
-
-#################################################
-#################################################
 ################################################# GENERIC FUNCTIONS - TO BE ADDED TO TO 'RANGE CHANGE FUNCS'
 occurrence <- function(x) length(x) > 0 # takes a vector and returns whether the length is greater than 0
 
@@ -97,7 +91,7 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
 
     #subset the data
     i <- MMdata$L >= nsp
-	i[i==T] <- is.gridcell.wellsampled(MMdata$Site[i], n=nyr)
+	  i[i==T] <- is.gridcell.wellsampled(MMdata$Site[i], n=nyr)
 
     # 4/2/13: with small numbers of visits, it's possible that no gridcells meet the criterion
         # I also centred the data on the mid year in order to improve numerical convergence 
@@ -105,9 +99,13 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
     if(sum(i) > nyr){ # PERHAPS CHANGE THIS TO LenUniq(MMdata[i,]$Site) > 6
         x <- try({# another source of the bug error is if there's not enough to fit the model
             MM <- glmer(focal ~ I(Year-my) + (1|Site), MMdata, subset=i, family=binomial)
-            coefs <- as.numeric(summary(MM)@coefs[2,])
+            coefs <- as.numeric(coef(summary(MM))[2,]) # should be compatible across versions
             }, silent=T)
-        if(class(x)=='try-error') save(list(MMdata, nsp), file='MM_ber_tryerror.rData')
+        if(class(x)=='try-error'){
+          MM_ber_tryerror <- list(MMdata, nsp)
+          save(MM_ber_tryerror, file='MM_ber_tryerror.rData')
+          coefs <- rep(NA, 4)
+        }
         # end bug check
     } else coefs <- rep(NA, 4)
     
@@ -149,7 +147,7 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
             } else {
                 MM <- glmer(cbind(nVR, failures) ~ cYr + (1|Site), data=MMdata, family=binomial, verbose=V)
             }    
-            coefs <- as.numeric(summary(MM)@coefs[2,])
+            coefs <- as.numeric(coef(summary(MM))[2,]) # should be compatible with old and new versions of lme4
             }, silent=T)
         if(class(x)=='try-error') save(MMdata, file='MM_bin_tryerror.rData')
         # end bug check
@@ -172,6 +170,10 @@ fit_Maes <-function(records, splityr=NULL, min_sp=5, var=T, test=4){
   #           (I tried adding the var=T option but it doesn't really help deliver 'sensible' T1 errors)
   # 2/12/13: there have been several attempts to figure out the test statistic here
   #         I've modified the code to allow a choice.
+  # 6/12/13: I've realised that low power is due to few sites passing the threshold.
+  #         For pSVS=0.05 under Control, only 9% of sites have >=5 species in both tp (12% have >=3 species)
+  #         For pSVS=0.1 under Control, 27% of sites have >=5 species in both tp (30% have >=3 species)
+  
   
   require(reshape2)
   
@@ -901,7 +903,7 @@ incidental_records <- function(true_data, nYrs, nVisits, p_short, focal=F){
 
 
 iterate_all_scenarios <- function(nreps=1, nSites=1000, nSpecies=50, nYrs=10, pSVS=0.05, save_data=F, pFocal=list(Occ=0.5, DetP=0.5), vrs=F, mv=20, stoch=T,
-                                  p_short=list(init=0,final=0.2), pDetMod=0.2, decline=0, id='', combos=F, Scenarios='BCDF', inclMM=F, Frescalo=F) {
+                                  p_short=list(init=0,final=0.2), pDetMod=0.2, decline=0, id='', combos=F, Scenarios='BCDF', inclMM=F, Frescalo=F, frescalo_path=NULL) {
     # this function is the wrapper for the standard procedure of generating data then analysing it and spitting the output
     # TO DO: allow save data to be an integer defining the number of reps to be printed. e.g. the first 100 out of 1000
     # As a workaround, I've added the 'inclMM' argument: if FALSE it bypasses the mixed model, which takes most time.
@@ -915,7 +917,7 @@ iterate_all_scenarios <- function(nreps=1, nSites=1000, nSpecies=50, nYrs=10, pS
                                               combos=combos, Scenarios=Scenarios, mv=mv, vrs=vrs, stoch=stoch)
 
             # now analyse the data
-            sapply(records, run_all_methods, inclMM=inclMM, Frescalo=Frescalo)
+            sapply(records, run_all_methods, inclMM=inclMM, Frescalo=Frescalo, frescalo_path=frescalo_path)
         })
     )
     attr(output,"simpars") <- list(nreps=nreps,nSpecies=nSpecies,nSites=nSites,nYrs=nYrs,pSVS=pSVS,pFocal=pFocal,p_short=p_short,
@@ -1211,7 +1213,7 @@ recording_visit <- function(spp_vector, p_obs=0.5, S=1){
 resample <- function(x, ...) x[sample.int(length(x), ...)] # added 3/11 7 moved to separate function 5/2/13
 
 
-run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=TRUE){
+run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=TRUE, frescalo_path=NULL){
 	# 3 November: inclMM modified from a Boolean to the option of a number or vector of numbers, each of which specify the values of nsp for including
 	# 6 November: added a 'stupid' model based on simply the number of visits & sites
 	# 4 December: added 'pRecsBenchmark': the proportion of records made up by commonest 27%
@@ -1275,10 +1277,16 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
   x <- try(
 	  LL_mm <- summary(glmer(focal ~ cYr + log2(L) + (1|Site), binomial, data=simdata, subset = L>0))
 	  , silent=T)
-	if(class(x)=='try-error') save(records, file='LLMM_try_error.rData')
+	if(class(x)=='try-error'){
+    save(records, file='LLMM_try_error.rData')
+    coef <- rep(NA,4)
+    output <- c(output, LLmm_trend=NA, LLmm_p=NA)
+	} else {
+	  coef <- as.numeric(coef(LL_mm)[2,]) # should be compatible with old and new versions of lme4
+	  output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
+	}
 	# end bug check
-	coef <- as.numeric(LL_mm@coefs[2,])
-  output <- c(output, LLmm_trend=coef[1], LLmm_p=coef[4])
+	
 	
   
 	######## Ball method 
@@ -1324,8 +1332,8 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
     nRecsFocal <- with(subset(records, Species=='focal'), tapply(Species,Year,length))
     recs_temp <- subset(records, Year %in% YearFS)
     nRecsTotal <- with(recs_temp, table(Year))
-	n_Sites <- with(recs_temp, tapply(Site, Year, LenUniq))
-	n_Vis <- with(recs_temp, tapply(Visit, Year, LenUniq))
+	  n_Sites <- with(recs_temp, tapply(Site, Year, LenUniq))
+	  n_Vis <- with(recs_temp, tapply(Visit, Year, LenUniq))
 
     # 14/5/13: there's an occasional problem here
     # in some datasets, there are zero focal records for a particular year
@@ -1388,16 +1396,10 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
     ######## Frescalo (by Tom August & Colin Harrower)
 	if (sum(Frescalo)>0){
 	 # Set directory where Frescalo is located
-	 	  # Set path to Frescalo and output folder, which is platform dependent 
-	  if (grepl("linux", R.version$platform)){
-	    #frescalo_path <- '/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Frescalo_3a_linux.exe'
-	    #output_dir <- '/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Output'	
-		frescalo_path <- '/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Frescalo_3a_linux.exe'
-	    output_dir <- '/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Output'
-	  } else { 
-	    frescalo_path <- "P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Frescalo_3.exe"
-	    output_dir <- "P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Output"
-	  }
+	 # Set path to Frescalo and output folder, which is platform dependent 
+	 if (is.null(frescalo_path)) frescalo_path <- paste(find.package('sparta'),'/exec/Frescalo_3a.exe',sep='')
+	 output_dir <- getwd()
+	 
 	 
 	 for (i in Frescalo) {
     #i=1: 1 year per time period
@@ -1465,6 +1467,7 @@ sims_to_frescalo <- function (records,output_dir,frescalo_path,tp2=FALSE){
   }
   fres_in<-unique(fres_in) # added 17/1/13 to remove duplicate entries
   # call the frecalo function
+  print(head(fres_in))
   Tfac_StDev<-run_fresc_sims(fres_in,output_dir,frescalo_path)
     
   # return the time factor and standard deviation for the species 'focal'
