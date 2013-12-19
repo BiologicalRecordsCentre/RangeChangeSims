@@ -6,7 +6,7 @@ This project contains all the scripts require to recreate the data and analyses 
 ###How do I run this myself?
 ---------------------------
 
-We recommend you use RStudio since this has a good interface with GitHub. You also need Git, this allows RStudio to talk to GitHub. [Install git](http://git-scm.com/downloads), first, and oncew you have this installed [install RStudio](http://www.rstudio.com/ide/download/). If you don't have R you will need to [download and install](http://cran.r-project.org/) that too.
+We recommend you use RStudio since this has a good interface with GitHub. You also need Git, this allows RStudio to talk to GitHub. [Install git](http://git-scm.com/downloads), first, and once you have this installed [install RStudio](http://www.rstudio.com/ide/download/). If you don't have R you will need to [download and install](http://cran.r-project.org/) that too.
 
 With R studio and Git installed, open RStudio and go to Project> Create project> Version Control> Git. Under 'Repository URL' paste the address for this page 'https://github.com/BiologicalRecordsCentre/RangeChangeSims'. 
 

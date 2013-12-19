@@ -1,6 +1,6 @@
 # Script to reproduce results in paper 
 # Tom August
-# 03/10/2013
+# 18/12/2013
 
 # WARNING: This script will install libraries needed for the analysis.
 # This includes updateing lme4 if the version you have is <1.0. If you
@@ -27,10 +27,9 @@ if(!lme4_details['Version']>1.0){
 library(sparta)
 
 # Run the analysis 
-# NOTE: This is set for 50 run (which takes about 20 hours on a regular desktop)
-# The original analysis uses XXXX runs
+# The original analysis uses 500 runs
 source('Sim_Wrapper.r')
-Sim_Wrapper(number_of_runs=50)
+Sim_Wrapper(number_of_runs=1)
 
 # Plot figures
 source('Explore_results.R')

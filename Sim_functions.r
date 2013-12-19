@@ -149,7 +149,10 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
             }    
             coefs <- as.numeric(coef(summary(MM))[2,]) # should be compatible with old and new versions of lme4
             }, silent=T)
-        if(class(x)=='try-error') save(MMdata, file='MM_bin_tryerror.rData')
+        if(class(x)=='try-error'){
+          save(MMdata, file='MM_bin_tryerror.rData')
+          coefs <- rep(NA, 4)
+        } 
         # end bug check
 
         # calculate the number of rows in the model as a proportion of the total site-year combos
@@ -1213,7 +1216,7 @@ recording_visit <- function(spp_vector, p_obs=0.5, S=1){
 resample <- function(x, ...) x[sample.int(length(x), ...)] # added 3/11 7 moved to separate function 5/2/13
 
 
-run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=TRUE, frescalo_path=NULL){
+run_all_methods <- function(records, min_sq=5, summarize=F, inclMM=2, Frescalo=TRUE, frescalo_path=NULL){
 	# 3 November: inclMM modified from a Boolean to the option of a number or vector of numbers, each of which specify the values of nsp for including
 	# 6 November: added a 'stupid' model based on simply the number of visits & sites
 	# 4 December: added 'pRecsBenchmark': the proportion of records made up by commonest 27%
@@ -1422,16 +1425,18 @@ run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=T
 	output <- c(output, nSites_trend=NSmod[2,1], nSites_p=NSmod[2,4])
 	
 	#append summary info this to the output (doesn't work as attr when looping over multiple datasets
+  # This will not work if more than one type of frescalo is run (ie frescalo = 1:2) since
+  # the second Stats.csv, will overwrite the first
 	if (summarize) {
         recording_summary <- summarize_recording(simdata, length(levels(records$Species))) # 0.03 seconds
        
         if (sum(Frescalo)>0){ # ~NB if(length(Frescalo) >1) then the following lines will only get info from the last run 
             if (grepl("linux", R.version$platform)){
                 #frst <- read.csv("/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")
-			    frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
-			}else{
-			    frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
-			}
+			           frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
+			       }else{
+			           frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
+			       }
         output <- c(output, Fr_Phi= attr(Tfac_Stdev, 'Phi'), Fr_MedianAlpha = median(frst$Alpha))
 		}            
         
