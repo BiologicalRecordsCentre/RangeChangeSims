@@ -189,7 +189,7 @@ ggV <- ggV + facet_wrap(~Scenario, nrow=1)
 
 # MAKE SOME PLOTS OF VALIDITY
 png(filename='Results/Figure_S1.png', wi=1024, hei=500)
-ggV %+% subset(ER, Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90]))
+print(ggV %+% subset(ER, Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90])))
 dev.off()
 
 ########################################################### PLOTTING VALIDITY WITHOUT INTENSITY
@@ -210,7 +210,7 @@ ggV <- ggV + theme(panel.grid.major = element_blank(),
 
 # MAKE SOME PLOTS OF VALIDITY
 png(filename='Results/Figure_1.png', wi=1024, hei=500)
-ggV %+% subset(ER[ER$intensity == 'med',], Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90]))  
+print(ggV %+% subset(ER[ER$intensity == 'med',], Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90])))
 dev.off()
 
 
@@ -233,11 +233,11 @@ ggP %+% subset(ER, Method %in% Methods_convert$ms & Scenario %in% with(Scenario_
 # MAKE SOME PLOTS OF POWER
 
 png(filename='Results/Figure_2.png', wi=500, hei=250)
-ggP %+% subset(ER, Scenario=='Control' & Method %in% good_methods)
+print(ggP %+% subset(ER, Scenario=='Control' & Method %in% good_methods))
 dev.off()
 
 png(filename='Results/Figure_S2.png', wi=1024, hei=500)
-ggP %+% subset(ER, Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90]))
+print(ggP %+% subset(ER, Method %in% Methods_convert$ms & Scenario %in% with(Scenario_convert,ms[id<90])))
 dev.off()
 
 ######################################################################## BAR PLOTS POWER
@@ -260,5 +260,5 @@ ggP %+% subset(ER[ER$intensity == 'med',], Method %in% Methods_convert$ms & Scen
 
 # MAKE SOME PLOTS OF POWER
 png(filename='Results/Figure_3.png', wi=1024, hei=500)
-ggP %+% subset(ER[ER$intensity == 'med',], Method %in% good_methods & Scenario %in% with(Scenario_convert,ms[id<90]))
+print(ggP %+% subset(ER[ER$intensity == 'med',], Method %in% good_methods & Scenario %in% with(Scenario_convert,ms[id<90])))
 dev.off()

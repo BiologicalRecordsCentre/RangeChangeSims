@@ -29,7 +29,7 @@ library(sparta)
 # Run the analysis 
 # The original analysis uses 500 runs
 source('Sim_Wrapper.r')
-Sim_Wrapper(number_of_runs=1)
+Sim_Wrapper(number_of_runs=50)
 
 # Plot figures
 source('Explore_results.R')
