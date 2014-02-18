@@ -96,15 +96,14 @@ fit_LadybirdMM <- function(MMdata, nsp=2, nyr=3){ #0.44 seconds
     # 4/2/13: with small numbers of visits, it's possible that no gridcells meet the criterion
         # I also centred the data on the mid year in order to improve numerical convergence 
     my <-median(unique(MMdata$Year))
-    if(sum(i) > nyr){ # PERHAPS CHANGE THIS TO LenUniq(MMdata[i,]$Site) > 6
+    if(length(unique(MMdata$Site[i])) > 1 & var(MMdata$focal[i]) > 0){ 
         x <- try({# another source of the bug error is if there's not enough to fit the model
             MM <- glmer(focal ~ I(Year-my) + (1|Site), MMdata, subset=i, family=binomial)
             coefs <- as.numeric(coef(summary(MM))[2,]) # should be compatible across versions
             }, silent=T)
         if(class(x)=='try-error'){
-          MM_ber_tryerror <- list(MMdata, nsp)
-          save(MM_ber_tryerror, file='MM_ber_tryerror.rData')
-          coefs <- rep(NA, 4)
+          if(grepl('step-halvings failed', x) | grepl('did not converge', x)) coefs <- rep(NA, 4) #the model fails if the data are too sparse
+          else save(MMdata, file=paste('MM_ber_tryerror_',nsp,'.rData'))
         }
         # end bug check
     } else coefs <- rep(NA, 4)
@@ -128,7 +127,8 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
     # 21 June: if no thresholds are applied then no need to look for well-sampled set
     if(nsp>1 & nyr>1) data <- subset(data, is.gridcell.wellsampled2(data, n=nyr))
     
-    if(nrow(data) > 0){
+    if(length(unique(data$Site)) > 1 & var(data$focal) > 0){
+        # we have enough data in the well-sampled set to try running a model
         MMdata <- dcast(data, Year + Site ~ ., fun=length, value.var='L') #how many lists?
         names(MMdata)[ncol(MMdata)] <- 'nVis'
     
@@ -146,15 +146,19 @@ fit_ladybirdMM_bin <- function(indata, nsp=2, nyr=3, od=F, V=F){
                 MM <- glmer(cbind(nVR, failures) ~ cYr + (1|Site) + (1|obs), data=MMdata, family=binomial, verbose=V)
             } else {
                 MM <- glmer(cbind(nVR, failures) ~ cYr + (1|Site), data=MMdata, family=binomial, verbose=V)
-            }    
+            }
+            
             coefs <- as.numeric(coef(summary(MM))[2,]) # should be compatible with old and new versions of lme4
             }, silent=T)
-        if(class(x)=='try-error'){
-          save(MMdata, file='MM_bin_tryerror.rData')
-          coefs <- rep(NA, 4)
-        } 
-        # end bug check
-
+        if(class(x)=='try-error') {# bug check
+          # several sources of error in these models exists.
+          # the try statement was originally written to capture datasets that were too small, but these are handled above
+          # Jan 2014:  new code to catch errors under lme4 v1
+          # some errors we understand
+          if(grepl('step-halvings failed', x) | grepl('did not converge', x)) coefs <- rep(NA, 4) #the model fails if the data are too sparse              
+          else save(MMdata, file='MM_bin_tryerror.rData')
+        }
+        
         # calculate the number of rows in the model as a proportion of the total site-year combos
         p_used <- nrow(MMdata)/nrow(unique(indata[,c('Year','Site')]))
         result <- c(coefs, p_used)
@@ -1216,7 +1220,7 @@ recording_visit <- function(spp_vector, p_obs=0.5, S=1){
 resample <- function(x, ...) x[sample.int(length(x), ...)] # added 3/11 7 moved to separate function 5/2/13
 
 
-run_all_methods <- function(records, min_sq=5, summarize=F, inclMM=2, Frescalo=TRUE, frescalo_path=NULL){
+run_all_methods <- function(records, min_sq=5, summarize=T, inclMM=2, Frescalo=TRUE, frescalo_path=NULL){
 	# 3 November: inclMM modified from a Boolean to the option of a number or vector of numbers, each of which specify the values of nsp for including
 	# 6 November: added a 'stupid' model based on simply the number of visits & sites
 	# 4 December: added 'pRecsBenchmark': the proportion of records made up by commonest 27%
@@ -1425,18 +1429,16 @@ run_all_methods <- function(records, min_sq=5, summarize=F, inclMM=2, Frescalo=T
 	output <- c(output, nSites_trend=NSmod[2,1], nSites_p=NSmod[2,4])
 	
 	#append summary info this to the output (doesn't work as attr when looping over multiple datasets
-  # This will not work if more than one type of frescalo is run (ie frescalo = 1:2) since
-  # the second Stats.csv, will overwrite the first
 	if (summarize) {
         recording_summary <- summarize_recording(simdata, length(levels(records$Species))) # 0.03 seconds
        
         if (sum(Frescalo)>0){ # ~NB if(length(Frescalo) >1) then the following lines will only get info from the last run 
             if (grepl("linux", R.version$platform)){
                 #frst <- read.csv("/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")
-			           frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
-			       }else{
-			           frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
-			       }
+			    frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
+			}else{
+			    frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
+			}
         output <- c(output, Fr_Phi= attr(Tfac_Stdev, 'Phi'), Fr_MedianAlpha = median(frst$Alpha))
 		}            
         
