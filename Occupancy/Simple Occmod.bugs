@@ -1,0 +1,22 @@
+
+  model {
+    # Priors
+    psi ~ dunif(0, 1)
+    p ~ dunif(0, 1)
+
+    # Likelihood
+    # Ecological model for true occurrence
+    for (i in 1:R) {
+      z[i] ~ dbern(psi)
+      p.eff[i] <- z[i] * p # a straw man of the realised process
+
+   # Observation model for replicated detection/nondetection observations
+   for (j in 1:T) {
+      y[i,j] ~ dbern(p.eff[i])
+      } #j
+   } #i
+
+  # Derived quantities
+  occ.prob <- mean(z[])   #
+  occ.fs <- sum(z[])       # Number of occupied sites among the 200
+}

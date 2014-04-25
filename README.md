@@ -6,7 +6,7 @@ This project contains all the scripts require to recreate the data and analyses 
 ###How do I run this myself?
 ---------------------------
 
-We recommend you use RStudio since this has a good interface with GitHub. You also need Git, this allows RStudio to talk to GitHub. [Install git](http://git-scm.com/downloads), first, and once you have this installed [install RStudio](http://www.rstudio.com/ide/download/). If you don't have R you will need to [download and install](http://cran.r-project.org/) that too.
+We recommend you use RStudio since this has a good interface with GitHub. You also need Git, this allows RStudio to talk to GitHub. [Install git](http://git-scm.com/downloads), first, and once you have this installed [install RStudio](http://www.rstudio.com/ide/download/). If you don't have R you will need to [download and install](http://cran.r-project.org/) that too. Finally, to run occupancy models we need a programme called JAGS installed. This can be downloaded from [sourceforge](http://sourceforge.net/projects/mcmc-jags/files/JAGS/3.x/)
 
 With R studio and Git installed, open RStudio and go to File> New project> Version Control> Git. Under 'Repository URL' paste the address for this page 'https://github.com/BiologicalRecordsCentre/RangeChangeSims'. 
 
