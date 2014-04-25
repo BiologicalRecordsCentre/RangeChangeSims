@@ -39,4 +39,3 @@ Sim_Wrapper(number_of_runs=1)
 
 # Plot figures
 plots <- Explore_results(readPath='Output',writePath='Results')
-

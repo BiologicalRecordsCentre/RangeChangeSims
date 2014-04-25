@@ -73,8 +73,8 @@ Sim_Wrapper <- function(number_of_runs=NULL){
           # wE ARE IN THE UK, running the trend methods
           output <- iterate_all_scenarios(nreps=nr, nSpecies=nSp, nSites=nSi, nYrs=nY, pSVS=pSVS, p_short=ps, pDetMod=di, 
                                           mv=mv, vrs=vrs, stoch=st, Scenarios=Sc, combos=combos, pFocal=pF, decline=d, id=code, save_data=sd,
-                                          inclMM=MM, Frescalo=Fr, Occ=Occ, nyr=nyr)
-          stat_out <- get_all_stats(output, save_to_txt=T) #single output including error rates and stats
+                                          inclMM=MM, Frescalo=Fr, Occ=Occ, nyr=nyr, writePath='Output' )
+          stat_out <- get_all_stats(output, save_to_txt=T, writePath='Output') #single output including error rates and stats
         } else { 
           # We are in the Netherlands running Occupancy
           replicate(nr, recs <- generate_all_scenarios(nSpecies=nSp, nSites=nSi, nYrs=nY, pSVS=pSVS, p_short=ps, pDetMod=di, 
