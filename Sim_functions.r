@@ -711,8 +711,14 @@ generate_records <- function(nYrs=2, true_data, decline=0, which.decline=1, site
     
     if(length(pSVS)==1) pSVS <- c(pSVS[1], 0)
     
-    if (sum(decline)==0) {records <- lapply(1:nYrs, function(i) 
-        recording_cycle(pSVS=pSVS[1]+i*pSVS[2], true_data=true_data, max_vis=mv, VisRichSites=vrs, stochastic=stoch)) #can start loop at zero
+    zeroDecline <- function(i){
+      records <- recording_cycle(pSVS=pSVS[1]+i*pSVS[2], true_data=true_data, max_vis=mv, VisRichSites=vrs, stochastic=stoch)
+      records$Year <- i
+      return(records)
+    }
+    
+    if (sum(decline)==0){
+      records <- lapply(1:nYrs, zeroDecline)  #can start loop at zero
     } else {
         # This part of the loop is triggered under two circumstances
         # 1: Testing power
