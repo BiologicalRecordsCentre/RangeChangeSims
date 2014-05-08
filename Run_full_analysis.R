@@ -10,14 +10,14 @@ rm(list=ls())
 # install required packages if not installed
 req_pkgs <- c('lme4','reshape2','abind','sp','gdata',
               'lattice','Matrix','ggplot2','Rcpp','R2jags')
-inst_pkgs <- req_pkgs[!req_pkgs %in% installed.packages()]
+inst_pkgs <- req_pkgs[!req_pkgs %in% row.names(installed.packages())]
 if(length(inst_pkgs) > 0){
   install.packages(inst_pkgs)
 }
 
 # install the sparta package (included in the github files), needed for the Frescalo
 # analyses
-if(!'sparta' %in% installed.packages()){
+if(!'sparta' %in% row.names(installed.packages())){
   install.packages('sparta_0.1.20.zip', repos = NULL)
 }
 library(sparta)

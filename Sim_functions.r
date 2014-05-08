@@ -752,12 +752,14 @@ generate_records <- function(nYrs=2, true_data, decline=0, which.decline=1, site
                 true_data[extinctions,which.decline[j]] <- 0 # set them to extinct
             }
             records[[i]] <- recording_cycle(pSVS=pSVS[1]+i*pSVS[2], true_data=true_data, max_vis=mv, VisRichSites=vrs, stochastic=stoch) #if starting loop at zero, use records[[i+1]]
+            records[[i]]$Year <- i
         }
     }
     #records <- lapply(1:nYrs, FUN=recording_cycle, nVisits=nVisits, true_data=true_data) #simple version with constant number of visits
-    
-    records <- melt(records, id.vars=1:3) #simply appends the two list elements into a simple 
-    names(records)[4] <- 'Year'
+    # replace melt with rbind 08/05/2014 TA&GP
+    # records <- melt(records, id.vars=1:3) #simply appends the two list elements into a simple 
+    # names(records)[4] <- 'Year'
+    records <- do.call(rbind, records)
     return(records)
 }
 
