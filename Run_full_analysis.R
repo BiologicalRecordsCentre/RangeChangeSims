@@ -32,7 +32,7 @@ if(!lme4_details['Version']>1.0){
 # Check that we have a version of reshape2 < 1.2
 # If not, update
 reshape2_details <- installed.packages()['reshape2',]
-if(reshape2_details['Version']>1.2){
+if(reshape2_details['Version']>1.2.2){
   stop('Please install reshape2 version 1.2, later versions do not work with these functions')
 }
 
