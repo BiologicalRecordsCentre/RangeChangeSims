@@ -1726,11 +1726,13 @@ shorten_lists <- function(records, p_short=0.25){ #defaults to 25% of lists bein
 	
 	#df of all the visits (Site is redundant but worth retaining for clarity)
 	uniq_vis  <- dcast(records, Year + Site + Visit ~.,length, value.var='Species') #0.06 seconds
-	uniq_vis$visit_id <- 1:nrow(uniq_vis) # this is necessary to make x easy to understand
+	# Change NA column name to something sensible
+	colnames(uniq_vis)[is.na(colnames(uniq_vis))] <- 'LL'
+  uniq_vis$visit_id <- 1:nrow(uniq_vis) # this is necessary to make x easy to understand
 	
 	prop_short <- p_short[[1]] + increment * uniq_vis$Year
 	uniq_vis$target_LL <- targetLL(prop_short)
-	uniq_vis$recs_to_remove <- uniq_vis$'NA' - uniq_vis$target_LL # 'NA' is the produced by dcast(): it's the list length for each visit
+	uniq_vis$recs_to_remove <- uniq_vis$LL - uniq_vis$target_LL # 'NA' is the produced by dcast(): it's the list length for each visit
 	uniq_vis <- subset(uniq_vis, subset=recs_to_remove>0) #restrict uniq_vis to those where pruning is necessary
 
 	records$record_id <- 1:nrow(records)

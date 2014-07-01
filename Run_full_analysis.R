@@ -8,11 +8,16 @@
 rm(list=ls())
 
 # install required packages if not installed
-req_pkgs <- c('lme4','reshape2','abind','sp','gdata',
+req_pkgs <- c('lme4','abind','sp','gdata',
               'lattice','Matrix','ggplot2','Rcpp','R2jags')
 inst_pkgs <- req_pkgs[!req_pkgs %in% row.names(installed.packages())]
 if(length(inst_pkgs) > 0){
   install.packages(inst_pkgs)
+}
+
+# install reshape2 version 
+if(!'reshape2' %in% row.names(installed.packages())){
+  install.packages('reshape2_1.2.2.tar.gz', repos = NULL, type = 'source')
 }
 
 # install the sparta package (included in the github files), needed for the Frescalo
@@ -33,7 +38,7 @@ if(!lme4_details['Version']>1.0){
 # If not, update
 reshape2_details <- installed.packages()['reshape2',]
 if(reshape2_details['Version']>1.2.2){
-  stop('Please install reshape2 version 1.2, later versions do not work with these functions')
+  stop('Please install reshape2 version 1.2.2, later versions do not work with these functions')
 }
 
 # Test JAGS is functional

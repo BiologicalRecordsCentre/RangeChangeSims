@@ -16,9 +16,8 @@ If you have just installed git for the first time you might get an error from RS
 
 Once you have created this project run the script 'Run_full_analysis.r' to recreate the majority of results presented in the paper.
 
-The only results that are not produced using this script are those for the occupancy models. However, we do provide a script that describes the model used ('Occupancy_model.r').
 
 ###How do I use these methods with my own data?
 -----------------------------------------------
 
-Excluding the occupancy models the various methods used can be found in the R package 'sparta'. A version of this package is included in this repository, however we recommend you install the most recent version of this package from [sparta's repository on GitHub](https://github.com/biologicalrecordscentre/sparta). There you will also be able to read tutorials and ask questions as well as report problems. 
+The various modelling methods used can be found in the R package 'sparta'. A version of this package is included in this repository, however we recommend you install the most recent version of this package from [sparta's repository on GitHub](https://github.com/biologicalrecordscentre/sparta). There you will also be able to read tutorials and ask questions as well as report problems. 
