@@ -1151,7 +1151,7 @@ recording_cycle <- function(pSVS=0.05, true_data, max_vis=10, VisRichSites=F, st
         # the number of visits at each site is defined by a multinomial distribution
         # this includes the number of sites with zero visits, so remove that from the calculation
         if(stochastic){
-            n <- rmultinom(n=1, size=nSite, prob=pr)[-1]
+            n <- rmultinom(n=1, size=nSite, prob=pr)#[-1] removal of 0 count moved to return statement
         } else {
             n <- round(pr*nSite)
             # are there rounding errors?
@@ -1159,7 +1159,7 @@ recording_cycle <- function(pSVS=0.05, true_data, max_vis=10, VisRichSites=F, st
             #if there are rounding errors, alter the number of sites in the zero category
             if(rem > 0) n[1] <- n[1] - rem
         }
-        return(n)
+        return(n[-1])
     }
     
     fxp <- function(pSVS=0.05,prch=0.25, nSite=1000, maxV=10, stochastic=T){
