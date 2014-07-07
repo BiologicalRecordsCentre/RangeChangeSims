@@ -692,8 +692,8 @@ generate_all_scenarios <- function(nSites=1000, nSpecies=25, nYrs=10, pSVS=0.07,
 }
 
 
-generate_records <- function(nYrs=2, true_data, decline=0, which.decline=1, sites_to_use=c(1,0), 
-                             pSVS=0.05, mv=20, vrs=F, stoch=T) {
+generate_records <- function(nYrs=10, true_data, decline=0, which.decline=1, sites_to_use=c(1,0), 
+                             pSVS=0.07, mv=20, vrs=F, stoch=T) {
     
     # wrapper for recording_cycle(), allowing it to be run over many years
     # sites_to_use was intended to be the way I implemented scenario B1, but no longer necessary
@@ -1124,7 +1124,7 @@ recording_cycle_old <- function(nVisits, true_data, with_repl=T, max_vis=10) {
 	return(subset(records, select=c(Species, Visit, Site)))
 }
 
-recording_cycle <- function(pSVS=0.05, true_data, max_vis=10, VisRichSites=F, stochastic=F) {
+recording_cycle <- function(pSVS=0.05, true_data, max_vis=10, VisRichSites=F, stochastic=T) {
     # runs a 'recording cycle': nVisits are apportioned randomly among the sites (rows) in true_data: some sites get multiple visits
     # 3 December: modified to give 'fatter tails' in the distribution of recording effort among sites
     #   in UK recording data, about 1/4 of monads visited each year get further visits
