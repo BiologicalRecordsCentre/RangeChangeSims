@@ -1,7 +1,7 @@
 ###Overview
 ---------
 
-This project contains all the scripts require to recreate the data and analyses present in the paper Isaac *et al* (2014). Range change simulations. *This Journal* xxx-xxx. In this paper we use simulated recording data to test methods of estimating range change under a range of recording scenarios.
+This project contains all the scripts required to recreate the data and analyses present in the paper Isaac *et al* (2014). Range change simulations. *This Journal* xxx-xxx. In this paper we use simulated recording data to test methods of estimating range change under a range of recording scenarios.
 
 ###How do I run this myself?
 ---------------------------
