@@ -1,7 +1,7 @@
 ###Overview
 ---------
 
-This project contains all the scripts required to recreate the data and analyses present in the paper Isaac *et al* (2014). Range change simulations. *This Journal* xxx-xxx. In this paper we use simulated recording data to test methods of estimating range change under a range of recording scenarios.
+This project contains all the scripts required to recreate the data and analyses present in the paper [Isaac *et al* (2014). Statistics for citizen science: extracting signals of change from noisy ecological data. *Methods in Ecology and Evolution*, 5: 1052–1060](http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12254/abstract), and in an [alternate (older) version](http://biorxiv.org/content/early/2014/07/10/006999) of the work. In this paper we use simulated recording data to test methods of estimating range change under a range of recording scenarios.
 
 ###How do I run this myself?
 ---------------------------
