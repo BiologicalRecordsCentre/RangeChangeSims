@@ -368,7 +368,7 @@ for(decline in c(0, 0.3)){
 # Lets look at one set of results
 res <- SimOut[[1]]
 
-# This set of results is for pSVS = 0.07, decline = 0
+# This set of results is for pSVS = 0.05, decline = 0
 attr(res, 'pSVS')
 attr(res, 'decline')
 

@@ -1655,10 +1655,11 @@ run_all_methods <- function(records, min_sq=5, summarize=T, nyr=3, inclMM=2,
        
         if (sum(Frescalo)>0){ # ~NB if(length(Frescalo) >1) then the following lines will only get info from the last run 
             if (grepl("linux", R.version$platform)){
-                #frst <- read.csv("/users/hails/tomaug/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")
-			    frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
+              frst <- read.csv(file.path(find.package('sparta'), 'exec/Stats.csv'))
+              #frst <- read.csv("/prj/NEC04273/BSBI Redlisting/Master Code/Frescalo/Frescalo_V3/Stats.csv")			
 			}else{
-			    frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
+			    frst <- read.csv(file.path(find.package('sparta'), 'exec/Stats.csv'))
+			    #frst <- read.csv("P:/NEC04273_SpeciesDistribution/Workfiles/Range change sims/Frescalo/Frescalo files/Stats.csv")    
 			}
         output <- c(output, Fr_Phi= attr(Tfac_Stdev, 'Phi'), Fr_MedianAlpha = median(frst$Alpha))
 		}            
